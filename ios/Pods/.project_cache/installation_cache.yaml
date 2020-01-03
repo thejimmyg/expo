@@ -6839,6 +6839,16 @@ CACHE_KEYS:
     PROJECT_NAME: EXSpeech
     SPECS:
       - EXSpeech (8.0.0)
+  EXSplashScreen:
+    BUILD_SETTINGS_CHECKSUM:
+      EXSplashScreen: 7e66048bae26287fb5e5155866d2508f
+    CHECKSUM: 8261a8f3b8b92547d62a8cf7897680a4b8f98b69
+    FILES:
+      - "../../packages/expo-splash-screen/ios/EXSplashScreen/EXSplashScreenModule.h"
+      - "../../packages/expo-splash-screen/ios/EXSplashScreen/EXSplashScreenModule.m"
+    PROJECT_NAME: EXSplashScreen
+    SPECS:
+      - EXSplashScreen (1.0.0)
   EXSQLite:
     BUILD_SETTINGS_CHECKSUM:
       EXSQLite: 65d89a6af97b24f728e91e75169fcc55
@@ -7159,16 +7169,16 @@ CACHE_KEYS:
       - nanopb/encode (0.3.9011)
   Pods-Exponent:
     BUILD_SETTINGS_CHECKSUM:
-      Debug: 5a9c57a3a1f4cd409da2b984bf58d22b
-      Release: 5a9c57a3a1f4cd409da2b984bf58d22b
+      Debug: 9ae3ec5e647f4a456e8c38be2dec79a9
+      Release: 9ae3ec5e647f4a456e8c38be2dec79a9
   Pods-ExponentIntegrationTests:
     BUILD_SETTINGS_CHECKSUM:
-      Debug: 2b3c5ca9b31e78c5d59c5b3da10bcfbf
-      Release: 2b3c5ca9b31e78c5d59c5b3da10bcfbf
+      Debug: 871c82769c37669778cd10bdb1d0f061
+      Release: 871c82769c37669778cd10bdb1d0f061
   Pods-Tests:
     BUILD_SETTINGS_CHECKSUM:
-      Debug: 2b3c5ca9b31e78c5d59c5b3da10bcfbf
-      Release: 2b3c5ca9b31e78c5d59c5b3da10bcfbf
+      Debug: 871c82769c37669778cd10bdb1d0f061
+      Release: 871c82769c37669778cd10bdb1d0f061
   Protobuf:
     BUILD_SETTINGS_CHECKSUM:
       Protobuf: e9ec876cfd5ece357978b5d515d5282c
