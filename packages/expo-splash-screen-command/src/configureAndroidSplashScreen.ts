@@ -25,9 +25,19 @@ const DRAWABLES_CONFIGS = {
     multiplier: 4,
   },
 };
-
-const SPLASH_SCREEN_DRAWABLE_FILENAME = 'splash_screen_image.png';
-const SPLASH_SCREEN_XML_FILENAME = 'splash_screen.xml';
+const FILENAMES = {
+  SPLASH_SCREEN_DRAWABLE: 'splashscreen_image.png',
+  SPLASH_SCREEN_XML: 'splashscreen.xml',
+  COLORS: 'colors_splashscreen.xml',
+  STYLES: 'styles_splashscreen.xml',
+  ANDROID_MANIFEST: 'AndroidManifest.xml',
+};
+const TEMPLATES_COMMENTS = {
+  LINE: `<!-- THIS LINE HANDLED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY -->`,
+  TOP: `<!--\n\n    THIS FILE IS CREATED BY 'expo-splash-screen' COMMAND AND IT'S FRAGMENTS ARE HANDLED BY IT\n\n-->`,
+  TOP_NO_MANUAL_MODIFY: `<!--\n\n    THIS FILE IS CREATED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY\n\n-->`,
+  ANDROID_MANIFEST: `<!-- THIS ACTIVITY'S 'android:theme' ATTRIBUTE IS HANDLED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY -->`,
+};
 
 /**
  * Modifies file's content if either `replacePattern` or `insertPattern` matches.
@@ -49,14 +59,14 @@ async function replaceOrInsertInFile(
   }
 ): Promise<boolean> {
   return (
-    replaceInFile(filePath, { replaceContent, replacePattern }) ||
-    insertToFile(filePath, { insertContent, insertPattern })
+    (await replaceInFile(filePath, { replaceContent, replacePattern })) ||
+    (await insertToFile(filePath, { insertContent, insertPattern }))
   );
 }
 
 /**
  * Tries to do following actions:
- * - when file doesn't exist - create it with given fileContent,
+ * - when file doesn't exist or is empty - create it with given fileContent,
  * - when file does exist and contains provided replacePattern - replace replacePattern with replaceContent,
  * - when file does exist and doesn't contain provided replacePattern - insert given insertContent before first match of insertPattern,
  * - when insertPattern does not occur in the file - append insertContent to the end of the file.
@@ -77,7 +87,7 @@ async function writeOrReplaceOrInsertInFile(
     insertPattern: RegExp | string;
   }
 ) {
-  if (!(await fs.pathExists(filePath))) {
+  if (!(await fs.pathExists(filePath)) || !/\S/m.test(await fs.readFile(filePath, 'utf8'))) {
     return await writeToFile(filePath, fileContent);
   }
 
@@ -115,7 +125,6 @@ async function replaceInFile(
   { replaceContent, replacePattern }: { replaceContent: string; replacePattern: string | RegExp }
 ) {
   const originalFileContent = await fs.readFile(filePath, 'utf8');
-
   const replacePatternOccurrence = originalFileContent.search(replacePattern);
   if (replacePatternOccurrence !== -1) {
     await fs.writeFile(filePath, originalFileContent.replace(replacePattern, replaceContent));
@@ -154,10 +163,10 @@ async function configureSplashScreenDrawables(
   androidMainResPath: string,
   splashScreenImagePath: string
 ) {
-  Promise.all(
+  await Promise.all(
     Object.keys(DRAWABLES_CONFIGS)
       .map(drawableDirectoryName =>
-        path.resolve(androidMainResPath, drawableDirectoryName, SPLASH_SCREEN_DRAWABLE_FILENAME)
+        path.resolve(androidMainResPath, drawableDirectoryName, FILENAMES.SPLASH_SCREEN_DRAWABLE)
       )
       .map(async drawablePath => {
         if (await fs.pathExists(drawablePath)) {
@@ -166,102 +175,95 @@ async function configureSplashScreenDrawables(
       })
   );
 
-  await fs.mkdir(path.resolve(androidMainResPath, 'drawable'));
+  if (!(await fs.pathExists(path.resolve(androidMainResPath, 'drawable')))) {
+    await fs.mkdir(path.resolve(androidMainResPath, 'drawable'));
+  }
   await fs.copyFile(
     splashScreenImagePath,
-    path.resolve(androidMainResPath, 'drawable', SPLASH_SCREEN_DRAWABLE_FILENAME)
+    path.resolve(androidMainResPath, 'drawable', FILENAMES.SPLASH_SCREEN_DRAWABLE)
   );
 }
 
-/**
- * Configures or creates splash screen's:
- * - background color in colors.xml
- * - xml drawable file
- * - style with theme including 'android:windowBackground' in styles.xml
- * - theme for activity in AndroidManifest.xml
- */
-async function configureSplashScreenXML(
-  androidMainPath: string,
-  mode: Mode,
-  splashScreenBackgroundColor: string
-) {
-  const androidMainResPath = path.resolve(androidMainPath, 'res');
-
-  // colors.xml
-  // TODO: maybe it's possible to move it to separate fully-controlled-by-this-script file?
-  await writeOrReplaceOrInsertInFile(path.resolve(androidMainResPath, 'values', 'colors.xml'), {
-    fileContent: `<?xml version="1.0" encoding="utf-8"?>
+async function configureColorsXML(androidMainResPath: string, splashScreenBackgroundColor: string) {
+  await writeOrReplaceOrInsertInFile(path.resolve(androidMainResPath, 'values', FILENAMES.COLORS), {
+    fileContent: `${TEMPLATES_COMMENTS.TOP}
 <resources>
-  <color name="splashScreenBackgroundColor">${splashScreenBackgroundColor}</color> <!-- HANDLED BY \'expo-splash-screen\' COMMAND -->'
+  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS.LINE}
 </resources>
 `,
+    replaceContent: `  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS.LINE}\n`,
+    replacePattern: /(?<=(?<openingTagLine>^.*?<resources>.*?$\n)(?<beforeLines>(?<beforeLine>^.*$\n)*?))(?<colorLine>^.*?(?<color><color name="splashscreen_background">.*<\/color>).*$\n)(?=(?<linesAfter>(?<afterLine>^.*$\n)*?)(?<closingTagLine>^.*?<\/resources>.*?$\n))/m,
 
-    replaceContent: `  <color name="splashScreenBackgroundColor">${splashScreenBackgroundColor}</color> <!-- HANDLED BY 'expo-splash-screen' COMMAND -->
-`,
-    replacePattern: /^(.*?)<color name="splashScreenBackgroundColor">(.+?)<\/color>(.*?)$/m,
-
-    insertContent: `  <color name="splashScreenBackgroundColor">${splashScreenBackgroundColor}</color> <!-- HANDLED BY 'expo-splash-screen' COMMAND -->
-`,
+    insertContent: `  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS.LINE}\n`,
     insertPattern: /^(.*?)<\/resources>(.*?)$/m,
   });
+}
 
-  // xml drawable file
+async function configureDrawableXML(androidMainResPath: string, mode: Mode) {
   const nativeSplashScreen: string =
     mode !== Mode.NATIVE
       ? ''
       : `
+
   <item>
     <bitmap
       android:gravity="center"
-      android:src="@drawable/splash_screen_image"
+      android:src="@drawable/splashscreen_image"
     />
-  </item>
-`;
+  </item>`;
 
   await writeToFile(
-    path.resolve(androidMainResPath, 'drawable', SPLASH_SCREEN_XML_FILENAME),
-    `<?xml version="1.0" encoding="utf-8"?>
-<!--
-
-    THIS FILE IS CREATED BY 'expo-splash-screen' COMMAND
-
--->
+    path.resolve(androidMainResPath, 'drawable', FILENAMES.SPLASH_SCREEN_XML),
+    `${TEMPLATES_COMMENTS.TOP_NO_MANUAL_MODIFY}
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-  <item android:drawable="@color/splashScreenBackgroundColor"/>${nativeSplashScreen}
+  <item android:drawable="@color/splashscreen_background"/>${nativeSplashScreen}
 </layer-list>
 `
   );
+}
 
-  // styles.xml
-  // TODO: separate file
-  await writeOrReplaceOrInsertInFile(path.resolve(androidMainResPath, 'values', 'styles.xml'), {
-    fileContent: `<?xml version="1.0" encoding="utf-8"?>
+async function configureStylesXML(androidMainResPath: string) {
+  await writeOrReplaceOrInsertInFile(path.resolve(androidMainResPath, 'values', FILENAMES.STYLES), {
+    fileContent: `${TEMPLATES_COMMENTS.TOP}
 <resources>
-  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar>
-    <item name="android:windowBackground">@drawable/splash_screen</item>
+  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar"> ${TEMPLATES_COMMENTS.LINE}
+    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS.LINE}
   </style>
 </resources>
 `,
-
-    replaceContent: `    <item name="android:windowBackground">@drawable/splash_screen</item> <!-- HANDLED BY 'expo-splash-screen' COMMAND -->`,
+    replaceContent: `    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS.LINE}\n`,
     replacePattern: /(?<=(?<styleNameLine>^.*?(?<styleName><style name="Theme\.App\.SplashScreen" parent=".*?">).*?$\n)(?<linesBeforeWindowBackgroundLine>(?<singleBeforeLine>^.*$\n)*?))(?<windowBackgroundLine>^.*?(?<windowBackground><item name="android:windowBackground">.*<\/item>).*$\n)(?=(?<linesAfterWindowBackgroundLine>(?<singleAfterLine>^.*$\n)*?)(?<closingTagLine>^.*?<\/style>.*?$\n))/m,
 
-    insertContent: `  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">
-    <item name="android:windowBackground">@drawable/splash_screen</item>
+    insertContent: `  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">  ${TEMPLATES_COMMENTS.LINE}
+    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS.LINE}
   </style>
 `,
     insertPattern: /^(.*?)<\/resources>(.*?)$/m,
   });
+}
 
-  // AndroidManifest.xml
-  // TODO: assumption that MainActivity is entry point
+async function configureAndroidManifestXML(androidMainPath: string) {
+  const androidManifestPath = path.resolve(androidMainPath, 'AndroidManifest.xml');
   if (
-    !(await replaceOrInsertInFile(path.resolve(androidMainPath, 'AndroidManifest.xml'), {
-      replaceContent: `\n    android:theme="@style/Theme.App.Splash" <!-- HANDLED BY 'expo-splash-screen' COMMAND -->\n`,
-      replacePattern: /(?<=(?<applicationPart>^.*?<application(.*|\n)*?)(?<activity>^.*?<activity(.|\n)*?android:name="\.MainActivity"(.|\n)*?))(?<androidTheme>\s*?android:theme=".*?"\s*)/m,
+    !(await replaceOrInsertInFile(androidManifestPath, {
+      replaceContent: `android:theme="@style/Theme.App.SplashScreen"`,
+      replacePattern: /(?<nameBeforeTheme>(?<=(?<application1>^.*?<application(.*|\n)*?)(?<activity1>^.*?<activity(.|\n)*?android:name="\.MainActivity"(.|\n)*?))(?<androidTheme1>android:theme=".*?"\s*?))|((?<=(?<application2>^.*?<application(.|\n)*?)(?<activity2>^.*?<activity(.|\n)*?))(?<androidTheme2>android:theme=".*?"\s*?)(?=((.|\n)*?android:name="\.MainActivity"(.|\n)*?)))/m,
 
-      insertContent: `\n    android:theme="@style/Theme.App.Splash" <!-- HANDLED BY 'expo-splash-screen' COMMAND -->\n`,
-      insertPattern: /(?<=(?<applicationPart>^.*?<application(.*|\n)*?)(?<activity>^.*?<activity(.|\n)*?android:name="\.MainActivity"(.|\n)*?))(?<insertMatch>>)/m,
+      insertContent: `\n      android:theme="@style/Theme.App.SplashScreen"`,
+      insertPattern: /(?<=(?<application>^.*?<application(.*|\n)*?)(?<activity>^.*?<activity))(?<activityAttributes>(.|\n)*?android:name="\.MainActivity"(.|\n)*?>)/m,
+    })) ||
+    !(await replaceOrInsertInFile(androidManifestPath, {
+      replaceContent: `\n\n    ${TEMPLATES_COMMENTS.ANDROID_MANIFEST}\n`,
+      replacePattern: RegExp(
+        `(?<=(?<application>^.*?<application(.|\n)*?))([\n\t ])*(?<comment>${TEMPLATES_COMMENTS.ANDROID_MANIFEST.replace(
+          /[-/\\^$*+?.()|[\]{}]/g,
+          '\\$&'
+        )})([\n\t ])*(?=(?<activity>(^.*?<activity)(.|\n)*?android:name="\.MainActivity"(.|\n)*?>))`,
+        'm'
+      ),
+
+      insertContent: `\n    ${TEMPLATES_COMMENTS.ANDROID_MANIFEST}\n`,
+      insertPattern: /(?<=(?<application>^.*?<application(.|\n)*?))(?<activity>(^.*?<activity)(.|\n)*?android:name="\.MainActivity"(.|\n)*?>)/m,
     }))
   ) {
     console.log(
@@ -274,6 +276,27 @@ async function configureSplashScreenXML(
       )
     );
   }
+}
+
+/**
+ * Configures or creates splash screen's:
+ * - background color
+ * - xml drawable file
+ * - style with theme including 'android:windowBackground'
+ * - theme for activity in AndroidManifest.xml
+ */
+async function configureSplashScreenXMLs(
+  androidMainPath: string,
+  mode: Mode,
+  splashScreenBackgroundColor: string
+) {
+  const androidMainResPath = path.resolve(androidMainPath, 'res');
+  await Promise.all([
+    configureColorsXML(androidMainResPath, splashScreenBackgroundColor),
+    configureDrawableXML(androidMainResPath, mode),
+    configureStylesXML(androidMainResPath),
+    configureAndroidManifestXML(androidMainPath),
+  ]);
 }
 
 /**
@@ -291,7 +314,7 @@ export default async function configureAndroidSplashScreen(imagePath: string, mo
 
   return Promise.all([
     await configureSplashScreenDrawables(path.resolve(androidMainPath, 'res'), imagePath),
-    await configureSplashScreenXML(androidMainPath, mode, splashScreenBackgroundColor),
+    await configureSplashScreenXMLs(androidMainPath, mode, splashScreenBackgroundColor),
     await configureShowingSplashScreen(projectRootPath),
   ]).then(() => {});
 }
