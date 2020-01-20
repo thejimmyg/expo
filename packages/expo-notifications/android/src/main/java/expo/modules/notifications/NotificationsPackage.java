@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 import expo.modules.notifications.installationid.InstallationIdProvider;
+import expo.modules.notifications.permissions.NotificationPermissionsModule;
 import expo.modules.notifications.tokens.PushTokenManager;
 import expo.modules.notifications.tokens.PushTokenModule;
 
@@ -19,7 +20,8 @@ public class NotificationsPackage extends BasePackage {
   public List<ExportedModule> createExportedModules(Context context) {
     return Arrays.asList(
         new PushTokenModule(context),
-        new InstallationIdProvider(context)
+        new InstallationIdProvider(context),
+        new NotificationPermissionsModule(context)
     );
   }
 
