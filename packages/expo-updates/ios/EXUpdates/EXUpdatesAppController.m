@@ -355,6 +355,7 @@ static NSString * const kEXUpdatesAppControllerErrorDomain = @"EXUpdatesAppContr
     } else {
       // there's no update, so signal we're ready to launch
       [self _maybeFinish];
+      [self _sendEventToBridgeWithType:kEXUpdatesNoUpdateAvailableEventName body:@{}];
       [self _runReaperInBackground];
     }
   });
