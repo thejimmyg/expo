@@ -31,7 +31,10 @@ template<> struct jscTypeMap<Type::None> { static constexpr JSTypedArrayType typ
 template<Type T>
 JSTypedArrayType jscArrayType() { return jscTypeMap<T>::type; }
 
-// fake class to extract jsc specific values from jsi::Runtime
+// WARNING: This implementation might break with jsi/JSCRuntime.cpp update
+//
+// JSCRuntime fake implementation that is binary compatible with jsi/JSCRuntime.cpp.
+// With reinterpret_cast we can get access to private internal of this runtime.
 class JSCRuntime : public jsi::Runtime{
 public:
   JSGlobalContextRef ctx;

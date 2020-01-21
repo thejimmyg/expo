@@ -184,6 +184,9 @@ dependencies {
     exclude group: 'com.squareup.okhttp3', module: 'okhttp-urlconnection'
   }
   END UNCOMMENT WHEN DISTRIBUTING */
+  def hermesPath = "../../node_modules/hermes-engine/android/"
+  debugImplementation files(hermesPath + "hermes-debug.aar")
+  releaseImplementation files(hermesPath + "hermes-release.aar")
 
   // WHEN_DISTRIBUTING_REMOVE_FROM_HERE
 

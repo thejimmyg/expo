@@ -285,13 +285,6 @@ public class ReactInstanceManagerBuilder {
   }
 
   private JavaScriptExecutorFactory getDefaultJSExecutorFactory(String appName, String deviceName) {
-    try {
-      // If JSC is included, use it as normal
-      SoLoader.loadLibrary("jscexecutor");
-      return new JSCExecutorFactory(appName, deviceName);
-    } catch (UnsatisfiedLinkError jscE) {
-      // Otherwise use Hermes
-      return new HermesExecutorFactory();
-    }
+    return new HermesExecutorFactory();
   }
 }
