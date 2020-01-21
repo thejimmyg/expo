@@ -225,14 +225,11 @@ static NSString * const kEXUpdatesAppControllerErrorDomain = @"EXUpdatesAppContr
 
   BOOL isDir;
   BOOL exists = [fileManager fileExistsAtPath:updatesDirectoryPath isDirectory:&isDir];
-  if (!exists || !isDir) {
-    if (exists && !isDir) {
-      NSError *err;
-      BOOL wasRemoved = [fileManager removeItemAtPath:updatesDirectoryPath error:&err];
-      if (!wasRemoved) {
-        return err;
-      }
+  if (exists) {
+    if (!isDir) {
+      return [NSError errorWithDomain:kEXUpdatesAppControllerErrorDomain code:1005 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create the Updates Directory; a file already exists with the required directory name"}];
     }
+  } else {
     NSError *err;
     BOOL wasCreated = [fileManager createDirectoryAtPath:updatesDirectoryPath withIntermediateDirectories:YES attributes:nil error:&err];
     if (!wasCreated) {
