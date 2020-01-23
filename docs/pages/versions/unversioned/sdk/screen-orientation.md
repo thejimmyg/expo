@@ -21,6 +21,24 @@ On both iOS and Android platforms, changes to the screen orientation will overri
 
 This API is pre-installed in [managed](../../introduction/managed-vs-bare/#managed-workflow) apps. It is not yet available for [bare](../../introduction/managed-vs-bare/#bare-workflow) React Native apps.
 
+### Warning
+
+This module needs additional configuration to work properly on iPads. Unfortunately, it will disable support for the split view.
+
+#### Managed workflow
+
+Open your app.json and add the following inside of the "expo" field:
+
+```json
+"ios": {
+    "requireFullScreen": true,
+}
+```
+
+#### Bare workflow
+
+Tick the `Requires Full Screen` checkbox in XCode. It should be located under `Project Target > General > Deployment Info`.
+
 ## API
 
 ```js
