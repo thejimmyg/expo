@@ -14,6 +14,7 @@ import java.util.List;
 import expo.modules.notifications.installationid.InstallationIdProvider;
 import expo.modules.notifications.notifications.presentation.ExpoNotificationBuilderFactory;
 import expo.modules.notifications.notifications.presentation.ExpoNotificationPresentationEffectsManager;
+import expo.modules.notifications.notifications.presentation.effects.SetBadgeCountNotificationEffect;
 import expo.modules.notifications.tokens.PushTokenManager;
 import expo.modules.notifications.tokens.PushTokenModule;
 
@@ -22,7 +23,8 @@ public class NotificationsPackage extends BasePackage {
   public List<InternalModule> createInternalModules(Context context) {
     return Arrays.asList(
         new ExpoNotificationBuilderFactory(),
-        new ExpoNotificationPresentationEffectsManager()
+        new ExpoNotificationPresentationEffectsManager(),
+        new SetBadgeCountNotificationEffect(context)
     );
   }
 

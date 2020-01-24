@@ -68,5 +68,6 @@ if (new File(rootProject.projectDir.parentFile, 'package.json').exists()) {
 
 dependencies {
   unimodule 'unimodules-core'
+  api 'me.leolin:ShortcutBadger:1.1.22@aar'
   api 'com.google.firebase:firebase-messaging:20.1.0'
 }
