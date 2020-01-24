@@ -13,5 +13,5 @@ export * from './AppLoading';
  * }
  * ```
  */
-export declare function preventAutoHideAsync(): Promise<void>;
+export declare function preventAutoHideAsync(): Promise<any>;
 export declare function hideAsync(): Promise<any>;

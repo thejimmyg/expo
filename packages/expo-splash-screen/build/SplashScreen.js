@@ -2,10 +2,6 @@ import { UnavailabilityError } from '@unimodules/core';
 import ExpoSplashScreen from './ExpoSplashScreen';
 export { default as AppLoading } from './AppLoading';
 export * from './AppLoading';
-let splashScreenHideTimeoutId;
-if (ExpoSplashScreen) {
-    splashScreenHideTimeoutId = setTimeout(ExpoSplashScreen.hideAsync, 0);
-}
 /**
  * Makes the native splash screen stay visible until `SplashScreen.hideAsync()` is called.
  *
@@ -20,7 +16,10 @@ if (ExpoSplashScreen) {
  * ```
  */
 export async function preventAutoHideAsync() {
-    clearTimeout(splashScreenHideTimeoutId);
+    if (!ExpoSplashScreen.preventAutoHideAsync) {
+        throw new UnavailabilityError('expo-splash-screen', 'preventAutoHideAsync');
+    }
+    return await ExpoSplashScreen.preventAutoHideAsync();
 }
 export async function hideAsync() {
     if (!ExpoSplashScreen.hideAsync) {

@@ -20,17 +20,23 @@ class SplashScreenModule(context: Context) : ExportedModule(context) {
   }
 
   @ExpoMethod
-  fun preventAutoHide(promise: Promise) {
-
+  fun preventAutoHideAsync(promise: Promise) {
+    SplashScreen.preventAutohide(
+      { promise.resolve(null) },
+      { m -> promise.reject(ERROR_TAG, m) }
+    )
   }
 
   @ExpoMethod
-  fun hide(promsie: Promise) {
-
+  fun hideAsync(promise: Promise) {
+    SplashScreen.hide(
+      { promise.resolve(null) },
+      { m -> promise.reject(ERROR_TAG, m) }
+    )
   }
 
   companion object {
-    private val NAME = "ExpoSplashScreen"
-    private val TAG = SplashScreenModule::class.java.simpleName
+    private const val NAME = "ExpoSplashScreen"
+    private const val ERROR_TAG = "ERR_SPLASH"
   }
 }

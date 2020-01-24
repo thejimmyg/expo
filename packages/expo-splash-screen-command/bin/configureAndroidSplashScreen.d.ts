@@ -1,2 +1,6 @@
 import { Mode } from './constants';
-export default function configureAndroidSplashScreen(imagePath: string, mode: Mode): Promise<void>;
+export default function configureAndroidSplashScreen({ imagePath, mode, backgroundColor, }: {
+    imagePath?: string;
+    mode: Mode;
+    backgroundColor: string;
+}): Promise<void>;

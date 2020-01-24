@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const chalk_1 = __importDefault(require("chalk"));
+const cli_platform_android_1 = require("@react-native-community/cli-platform-android");
 const constants_1 = require("./constants");
 const DRAWABLES_CONFIGS = {
     drawable: {
@@ -34,8 +35,11 @@ const FILENAMES = {
     STYLES: 'styles_splashscreen.xml',
     ANDROID_MANIFEST: 'AndroidManifest.xml',
 };
-const TEMPLATES_COMMENTS = {
-    LINE: `<!-- THIS LINE HANDLED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY -->`,
+const TEMPLATES_COMMENTS_JAVA_KOTLIN = {
+    LINE: `// THIS LINE IS HANDLED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY`,
+};
+const TEMPLATES_COMMENTS_XML = {
+    LINE: `<!-- THIS LINE IS HANDLED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY -->`,
     TOP: `<!--\n\n    THIS FILE IS CREATED BY 'expo-splash-screen' COMMAND AND IT'S FRAGMENTS ARE HANDLED BY IT\n\n-->`,
     TOP_NO_MANUAL_MODIFY: `<!--\n\n    THIS FILE IS CREATED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY\n\n-->`,
     ANDROID_MANIFEST: `<!-- THIS ACTIVITY'S 'android:theme' ATTRIBUTE IS HANDLED BY 'expo-splash-screen' COMMAND AND IT'S DISCOURAGED TO MODIFY IT MANUALLY -->`,
@@ -107,6 +111,7 @@ async function insertToFile(filePath, { insertContent, insertPattern }) {
 }
 /**
  * Deletes all previous splash_screen_images and copies new one to desired drawable directory.
+ * If path isn;t provided then no new image is placed in drawable directories.
  * @see https://developer.android.com/training/multiscreen/screendensities
  */
 async function configureSplashScreenDrawables(androidMainResPath, splashScreenImagePath) {
@@ -117,21 +122,23 @@ async function configureSplashScreenDrawables(androidMainResPath, splashScreenIm
             await fs_extra_1.default.remove(drawablePath);
         }
     }));
-    if (!(await fs_extra_1.default.pathExists(path_1.default.resolve(androidMainResPath, 'drawable')))) {
-        await fs_extra_1.default.mkdir(path_1.default.resolve(androidMainResPath, 'drawable'));
+    if (splashScreenImagePath) {
+        if (!(await fs_extra_1.default.pathExists(path_1.default.resolve(androidMainResPath, 'drawable')))) {
+            await fs_extra_1.default.mkdir(path_1.default.resolve(androidMainResPath, 'drawable'));
+        }
+        await fs_extra_1.default.copyFile(splashScreenImagePath, path_1.default.resolve(androidMainResPath, 'drawable', FILENAMES.SPLASH_SCREEN_DRAWABLE));
     }
-    await fs_extra_1.default.copyFile(splashScreenImagePath, path_1.default.resolve(androidMainResPath, 'drawable', FILENAMES.SPLASH_SCREEN_DRAWABLE));
 }
 async function configureColorsXML(androidMainResPath, splashScreenBackgroundColor) {
     await writeOrReplaceOrInsertInFile(path_1.default.resolve(androidMainResPath, 'values', FILENAMES.COLORS), {
-        fileContent: `${TEMPLATES_COMMENTS.TOP}
+        fileContent: `${TEMPLATES_COMMENTS_XML.TOP}
 <resources>
-  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS.LINE}
+  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS_XML.LINE}
 </resources>
 `,
-        replaceContent: `  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS.LINE}\n`,
+        replaceContent: `  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS_XML.LINE}\n`,
         replacePattern: /(?<=(?<openingTagLine>^.*?<resources>.*?$\n)(?<beforeLines>(?<beforeLine>^.*$\n)*?))(?<colorLine>^.*?(?<color><color name="splashscreen_background">.*<\/color>).*$\n)(?=(?<linesAfter>(?<afterLine>^.*$\n)*?)(?<closingTagLine>^.*?<\/resources>.*?$\n))/m,
-        insertContent: `  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS.LINE}\n`,
+        insertContent: `  <color name="splashscreen_background">${splashScreenBackgroundColor}</color> ${TEMPLATES_COMMENTS_XML.LINE}\n`,
         insertPattern: /^(.*?)<\/resources>(.*?)$/m,
     });
 }
@@ -146,7 +153,7 @@ async function configureDrawableXML(androidMainResPath, mode) {
       android:src="@drawable/splashscreen_image"
     />
   </item>`;
-    await writeToFile(path_1.default.resolve(androidMainResPath, 'drawable', FILENAMES.SPLASH_SCREEN_XML), `${TEMPLATES_COMMENTS.TOP_NO_MANUAL_MODIFY}
+    await writeToFile(path_1.default.resolve(androidMainResPath, 'drawable', FILENAMES.SPLASH_SCREEN_XML), `${TEMPLATES_COMMENTS_XML.TOP_NO_MANUAL_MODIFY}
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
   <item android:drawable="@color/splashscreen_background"/>${nativeSplashScreen}
 </layer-list>
@@ -154,17 +161,17 @@ async function configureDrawableXML(androidMainResPath, mode) {
 }
 async function configureStylesXML(androidMainResPath) {
     await writeOrReplaceOrInsertInFile(path_1.default.resolve(androidMainResPath, 'values', FILENAMES.STYLES), {
-        fileContent: `${TEMPLATES_COMMENTS.TOP}
+        fileContent: `${TEMPLATES_COMMENTS_XML.TOP}
 <resources>
-  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar"> ${TEMPLATES_COMMENTS.LINE}
-    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS.LINE}
+  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar"> ${TEMPLATES_COMMENTS_XML.LINE}
+    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS_XML.LINE}
   </style>
 </resources>
 `,
-        replaceContent: `    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS.LINE}\n`,
+        replaceContent: `    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS_XML.LINE}\n`,
         replacePattern: /(?<=(?<styleNameLine>^.*?(?<styleName><style name="Theme\.App\.SplashScreen" parent=".*?">).*?$\n)(?<linesBeforeWindowBackgroundLine>(?<singleBeforeLine>^.*$\n)*?))(?<windowBackgroundLine>^.*?(?<windowBackground><item name="android:windowBackground">.*<\/item>).*$\n)(?=(?<linesAfterWindowBackgroundLine>(?<singleAfterLine>^.*$\n)*?)(?<closingTagLine>^.*?<\/style>.*?$\n))/m,
-        insertContent: `  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">  ${TEMPLATES_COMMENTS.LINE}
-    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS.LINE}
+        insertContent: `  <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">  ${TEMPLATES_COMMENTS_XML.LINE}
+    <item name="android:windowBackground">@drawable/splashscreen</item>  ${TEMPLATES_COMMENTS_XML.LINE}
   </style>
 `,
         insertPattern: /^(.*?)<\/resources>(.*?)$/m,
@@ -179,9 +186,9 @@ async function configureAndroidManifestXML(androidMainPath) {
         insertPattern: /(?<=(?<application>^.*?<application(.*|\n)*?)(?<activity>^.*?<activity))(?<activityAttributes>(.|\n)*?android:name="\.MainActivity"(.|\n)*?>)/m,
     })) ||
         !(await replaceOrInsertInFile(androidManifestPath, {
-            replaceContent: `\n\n    ${TEMPLATES_COMMENTS.ANDROID_MANIFEST}\n`,
-            replacePattern: RegExp(`(?<=(?<application>^.*?<application(.|\n)*?))([\n\t ])*(?<comment>${TEMPLATES_COMMENTS.ANDROID_MANIFEST.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})([\n\t ])*(?=(?<activity>(^.*?<activity)(.|\n)*?android:name="\.MainActivity"(.|\n)*?>))`, 'm'),
-            insertContent: `\n    ${TEMPLATES_COMMENTS.ANDROID_MANIFEST}\n`,
+            replaceContent: `\n\n    ${TEMPLATES_COMMENTS_XML.ANDROID_MANIFEST}\n`,
+            replacePattern: RegExp(`(?<=(?<application>^.*?<application(.|\n)*?))([\n\t ])*(?<comment>${TEMPLATES_COMMENTS_XML.ANDROID_MANIFEST.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})([\n\t ])*(?=(?<activity>(^.*?<activity)(.|\n)*?android:name="\.MainActivity"(.|\n)*?>))`, 'm'),
+            insertContent: `\n    ${TEMPLATES_COMMENTS_XML.ANDROID_MANIFEST}\n`,
             insertPattern: /(?<=(?<application>^.*?<application(.|\n)*?))(?<activity>(^.*?<activity)(.|\n)*?android:name="\.MainActivity"(.|\n)*?>)/m,
         }))) {
         console.log(chalk_1.default.yellow(`${chalk_1.default.magenta('AndroidManifest.xml')} does not contain <activity /> entry for ${chalk_1.default.magenta('MainActivity')}. SplashScreen style will not be applied.`));
@@ -204,20 +211,102 @@ async function configureSplashScreenXMLs(androidMainPath, mode, splashScreenBack
     ]);
 }
 /**
- * Injects specific code to MainApplication that would trigger SplashScreen.
- * TODO: make it work
+ * Injects specific code to MainApplication that would trigger SplashScreen mounting process.
  */
-async function configureShowingSplashScreen(projectRootPath) {
-    // const mainAndroidFilePath = projectConfig(projectRootPath)?.mainFilePath;
+async function configureShowingSplashScreen(projectRootPath, mode) {
+    var _a;
+    // eslint-disable-next-line
+    const mainApplicationPath = (_a = cli_platform_android_1.projectConfig(projectRootPath)) === null || _a === void 0 ? void 0 : _a.mainFilePath;
+    if (!mainApplicationPath) {
+        console.log(chalk_1.default.red('TODO!'));
+        return;
+    }
+    const mainActivityPathJava = path_1.default.resolve(mainApplicationPath, '../MainActivity.java');
+    const mainActivityPathKotlin = path_1.default.resolve(mainApplicationPath, '../MainActivity.kt');
+    const isJava = await fs_extra_1.default.pathExists(mainActivityPathJava);
+    const isKotlin = !isJava && (await fs_extra_1.default.pathExists(mainActivityPathKotlin));
+    if (isJava) {
+        // handle imports
+        await replaceOrInsertInFile(mainActivityPathJava, {
+            replacePattern: /^import main\.kotlin\.expo\.modules\.splashscreen\.SplashScreen;.*?\nimport main\.kotlin\.expo\.modules\.splashscreen\.SplashScreenMode;.*?$/m,
+            replaceContent: `import main.kotlin.expo.modules.splashscreen.SplashScreen;\nimport main.kotlin.expo.modules.splashscreen.SplashScreenMode;`,
+            insertPattern: /(?=public class .* extends .* {.*$)/m,
+            insertContent: `import main.kotlin.expo.modules.splashscreen.SplashScreen;\nimport main.kotlin.expo.modules.splashscreen.SplashScreenMode;\n\n`,
+        });
+        // handle onCreate
+        if (!(await replaceOrInsertInFile(mainActivityPathJava, {
+            replacePattern: /(?<=super\.onCreate(.|\n)*?)SplashScreen\.show\(this, SplashScreenMode\..*\);.*$/m,
+            replaceContent: `SplashScreen.show(this, SplashScreenMode.${mode.toUpperCase()}); ${TEMPLATES_COMMENTS_JAVA_KOTLIN.LINE}`,
+            insertPattern: /(?<=^.*super\.onCreate.*$)/m,
+            insertContent: `\n    // SplashScreen.show(...) has to called after super.onCreate(...)\n    SplashScreen.show(this, SplashScreenMode.${mode.toUpperCase()}); ${TEMPLATES_COMMENTS_JAVA_KOTLIN.LINE}`,
+        }))) {
+            // handle if sth went wrong
+            // no previously defined onCreate -> insert basic one
+            await insertToFile(mainActivityPathJava, {
+                insertPattern: /(?<=public class .* extends .* {.*$)/m,
+                insertContent: `\n
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    // SplashScreen.show(...) has to called after super.onCreate(...)
+    SplashScreen.show(this, SplashScreenMode.${mode.toUpperCase()}); ${TEMPLATES_COMMENTS_JAVA_KOTLIN.LINE}
+  }\n`,
+            });
+            // with additional bundle import at the top
+            await replaceOrInsertInFile(mainActivityPathJava, {
+                replacePattern: /import android\.os\.Bundle;/m,
+                replaceContent: 'import android.os.Bundle;',
+                insertPattern: /(?<=(^.*?package .*?$))/m,
+                insertContent: `\n\nimport android.os.Bundle;`,
+            });
+        }
+        return;
+    }
+    if (isKotlin) {
+        // handle imports
+        await replaceOrInsertInFile(mainActivityPathKotlin, {
+            replacePattern: /^import main\.kotlin\.expo\.modules\.splashscreen\.SplashScreen.*?\nimport main\.kotlin\.expo\.modules\.splashscreen\.SplashScreenMode.*?$/m,
+            replaceContent: `import main.kotlin.expo.modules.splashscreen.SplashScreen\nimport main.kotlin.expo.modules.splashscreen.SplashScreenMode`,
+            insertPattern: /(?=class .* : .* {.*$)/m,
+            insertContent: `import main.kotlin.expo.modules.splashscreen.SplashScreen\nimport main.kotlin.expo.modules.splashscreen.SplashScreenMode\n\n`,
+        });
+        // handle onCreate
+        if (!(await replaceOrInsertInFile(mainActivityPathKotlin, {
+            replacePattern: /(?<=super\.onCreate(.|\n)*?)SplashScreen\.show\(this, SplashScreenMode\..*\).*$/m,
+            replaceContent: `SplashScreen.show(this, SplashScreenMode.${mode.toUpperCase()}) ${TEMPLATES_COMMENTS_JAVA_KOTLIN.LINE}`,
+            insertPattern: /(?<=^.*super\.onCreate.*$)/m,
+            insertContent: `\n    // SplashScreen.show(...) has to called after super.onCreate(...)\n    SplashScreen.show(this, SplashScreenMode.${mode.toUpperCase()}) ${TEMPLATES_COMMENTS_JAVA_KOTLIN.LINE}`,
+        }))) {
+            // handle if sth went wrong
+            // no previously defined onCreate -> insert basic one
+            await insertToFile(mainActivityPathKotlin, {
+                insertPattern: /(?<=class .* : .* {.*$)/m,
+                insertContent: `\n
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    // SplashScreen.show(...) has to called after super.onCreate(...)
+    SplashScreen.show(this, SplashScreenMode.${mode.toUpperCase()}) ${TEMPLATES_COMMENTS_JAVA_KOTLIN.LINE}
+  }\n`,
+            });
+            // with additional bundle import at the top
+            await replaceOrInsertInFile(mainActivityPathKotlin, {
+                replacePattern: /import android\.os\.Bundle/m,
+                replaceContent: 'import android.os.Bundle',
+                insertPattern: /(?<=(^.*?package .*?$))/m,
+                insertContent: `\n\nimport android.os.Bundle`,
+            });
+        }
+        return;
+    }
+    console.log('TODO: ERROR');
 }
-async function configureAndroidSplashScreen(imagePath, mode) {
-    const splashScreenBackgroundColor = `#FFFFFF`;
+async function configureAndroidSplashScreen({ imagePath, mode, backgroundColor, }) {
     const projectRootPath = path_1.default.resolve();
     const androidMainPath = path_1.default.resolve(projectRootPath, 'android/app/src/main');
     return Promise.all([
         await configureSplashScreenDrawables(path_1.default.resolve(androidMainPath, 'res'), imagePath),
-        await configureSplashScreenXMLs(androidMainPath, mode, splashScreenBackgroundColor),
-        await configureShowingSplashScreen(projectRootPath),
+        await configureSplashScreenXMLs(androidMainPath, mode, backgroundColor),
+        await configureShowingSplashScreen(projectRootPath, mode),
     ]).then(() => { });
 }
 exports.default = configureAndroidSplashScreen;

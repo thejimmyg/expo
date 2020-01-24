@@ -4,28 +4,41 @@ import program from '@expo/commander';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
+import colorString from 'color-string';
 
 import { Mode, Platform } from './constants';
 import configureAndroidSplashScreen from './configureAndroidSplashScreen';
 import configureIosSplashScreen from './configureIosSplashScreen';
 
-type Command = program.Command & {
+/**
+ * There parameters have to be provided by the user or omitted if possible.
+ */
+interface Params {
+  backgroundColor: string;
+  imagePath: string | undefined;
+}
+
+/**
+ * These are parameters that might be optionally provided by the user. There are default values for them.
+ */
+interface Options {
   mode: Mode;
   platform: Platform;
-};
+}
 
-async function action(imagePath: string, command: Command) {
-  switch (command.platform) {
+async function action(configuration: Params & Options) {
+  const { platform, ...restParams } = configuration;
+  switch (platform) {
     case Platform.ANDROID:
-      await configureAndroidSplashScreen(imagePath, command.mode);
+      await configureAndroidSplashScreen(restParams);
       break;
     case Platform.IOS:
-      await configureIosSplashScreen(imagePath, command.mode);
+      await configureIosSplashScreen(restParams);
       break;
     case Platform.ALL:
     default:
-      await configureAndroidSplashScreen(imagePath, command.mode);
-      await configureIosSplashScreen(imagePath, command.mode);
+      await configureAndroidSplashScreen(restParams);
+      await configureIosSplashScreen(restParams);
       break;
   }
 }
@@ -37,51 +50,74 @@ function getAvailableOptions(o: object) {
 }
 
 /**
- * Ensures following requirements are met:
- * - imagePath points to a valid .png file
- * - Mode.NATIVE is selected only with Platform.ANDROID
+ * Ensures following semantic requirements are met:
+ * @param configuration.imagePath path that points to a valid .png file
+ * @param configuration.mode Mode.NATIVE is selected only with Platform.ANDROID
+ * @param configuration.backgroundColor is valid hex #RGB/#RGBA color
  */
-async function ensureValidConfiguration(imagePathString: string, command: Command) {
+async function validateConfiguration(
+  configuration: Options & Params
+): never | Promise<Options & Params> {
+  const { mode, imagePath: imagePathString, platform } = configuration;
+
   // check for `native` mode being selected only for `android` platform
-  if (command.mode === Mode.NATIVE && command.platform !== Platform.ANDROID) {
+  if (mode === Mode.NATIVE && platform !== Platform.ANDROID) {
     console.log(
       chalk.red(
         `\nInvalid ${chalk.magenta('platform')} ${chalk.yellow(
-          command.platform
+          platform
         )} selected for ${chalk.magenta('mode')} ${chalk.yellow(
-          command.mode
+          mode
         )}. See below for the valid options configuration.\n`
       )
     );
     program.help();
   }
 
-  const imagePath = path.resolve(imagePathString);
+  if (imagePathString) {
+    const imagePath = path.resolve(imagePathString);
+    // check if `imagePath` exists
+    if (!(await fs.pathExists(imagePath))) {
+      chalk.red(
+        `\nNo such file ${chalk.yellow(imagePathString)}. Provide path to a valid .png file.\n`
+      );
+      program.help();
+    }
 
-  // check if `imagePath` exists
-  if (!(await fs.pathExists(imagePath))) {
-    chalk.red(
-      `\nNo such file ${chalk.yellow(imagePathString)}. Provide path to a valid .png file.\n`
-    );
-    program.help();
+    // check if `imagePath` is a readable .png file
+    if (path.extname(imagePath) !== '.png') {
+      console.log(
+        chalk.red(
+          `\nProvided ${chalk.yellow(
+            imagePathString
+          )} file is not a .png file. Provide path to a valid .png file.\n`
+        )
+      );
+      program.help();
+    }
   }
 
-  // check if `imagePath` is a readable .png file
-  if (path.extname(imagePath) !== '.png') {
+  const backgroundColor = colorString.get(configuration.backgroundColor);
+  if (!backgroundColor) {
     console.log(
       chalk.red(
-        `\nProvided ${chalk.yellow(
-          imagePathString
-        )} file is not a .png file. Provide path to a valid .png file.\n`
+        `\nProvided invalid argument ${chalk.yellow(
+          configuration.backgroundColor
+        )} as backgroundColor. See below for available formats for this argument.\n`
       )
     );
     program.help();
   }
+
+  return {
+    ...configuration,
+    backgroundColor: colorString.to.hex(backgroundColor.value),
+  };
 }
 
 async function runAsync() {
   program
-    .arguments('<imagePath>')
+    .arguments('<backgroundColor> [imagePath]')
     .option(
       '-m, --mode [mode]',
       `Mode to be used for native splash screen image. Available values: ${getAvailableOptions(
@@ -123,12 +159,24 @@ async function runAsync() {
     .allowUnknownOption(false)
     .description(
       'Idempotent operation that configures native splash screens using passed .png file that would be used in native splash screen.',
-      { imagePath: `(${chalk.dim.yellow('required')}) Path to a valid .png image.` }
+      {
+        backgroundColor: `(${chalk.dim.red(
+          'required'
+        )}) Valid css-formatted color (hex (#RRGGBB[AA]), rgb[a], hsl[a], named color (https://drafts.csswg.org/css-color/#named-colors)) that would be used as background color for native splash screen view.`,
+        imagePath: `(${chalk.dim.yellow('optional')}) Path to a valid .png image.`,
+      }
     )
-    .asyncAction(async (imagePath: string, command: Command) => {
-      await ensureValidConfiguration(imagePath, command);
-      await action(imagePath, command);
-    });
+    .asyncAction(
+      async (
+        backgroundColor: string,
+        imagePath: string | undefined,
+        { mode, platform }: program.Command & Options
+      ) => {
+        const configuration = { imagePath, backgroundColor, mode, platform };
+        const validatedConfiguration = await validateConfiguration(configuration);
+        await action(validatedConfiguration);
+      }
+    );
 
   program.parse(process.argv);
 
@@ -136,7 +184,9 @@ async function runAsync() {
   if (program.args.length === 0) {
     console.log(
       chalk.red(
-        `\nMissing argument ${chalk.yellow('imagePath')}. See below for the required arguments.\n`
+        `\nMissing argument ${chalk.yellow.dim(
+          'backgroundColor'
+        )}. See below for the required arguments.\n`
       )
     );
     program.help();
