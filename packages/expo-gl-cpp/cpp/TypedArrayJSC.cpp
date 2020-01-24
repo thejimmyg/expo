@@ -16,17 +16,19 @@ using ContentType = TypedArray::ContentType<T>;
 
 template<Type> struct jscTypeMap;
 
-template<> struct jscTypeMap<Type::Int8Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeInt8Array; };
-template<> struct jscTypeMap<Type::Int16Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeInt16Array; };
-template<> struct jscTypeMap<Type::Int32Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeInt32Array; };
-template<> struct jscTypeMap<Type::Uint8Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeUint8Array; };
-template<> struct jscTypeMap<Type::Uint8ClampedArray> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeUint8ClampedArray; };
-template<> struct jscTypeMap<Type::Uint16Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeUint16Array; };
-template<> struct jscTypeMap<Type::Uint32Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeUint32Array; };
-template<> struct jscTypeMap<Type::Float32Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeFloat32Array; };
-template<> struct jscTypeMap<Type::Float64Array> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeFloat64Array; };
-template<> struct jscTypeMap<Type::ArrayBuffer> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeArrayBuffer; };
-template<> struct jscTypeMap<Type::None> { static constexpr JSTypedArrayType type = kJSTypedArrayTypeNone; };
+#define TYPE_MAP(jsi, jsc) template<> struct jscTypeMap<Type::jsi> { static constexpr JSTypedArrayType type = jsc; }
+TYPE_MAP(Int8Array, kJSTypedArrayTypeInt8Array);
+TYPE_MAP(Int16Array, kJSTypedArrayTypeInt16Array);
+TYPE_MAP(Int32Array, kJSTypedArrayTypeInt32Array);
+TYPE_MAP(Uint8Array, kJSTypedArrayTypeUint8Array);
+TYPE_MAP(Uint8ClampedArray, kJSTypedArrayTypeUint8ClampedArray);
+TYPE_MAP(Uint16Array, kJSTypedArrayTypeUint16Array);
+TYPE_MAP(Uint32Array, kJSTypedArrayTypeUint32Array);
+TYPE_MAP(Float32Array, kJSTypedArrayTypeFloat32Array);
+TYPE_MAP(Float64Array, kJSTypedArrayTypeFloat64Array);
+TYPE_MAP(ArrayBuffer, kJSTypedArrayTypeArrayBuffer);
+TYPE_MAP(None, kJSTypedArrayTypeNone; );
+#undef TYPE_MAP
 
 template<Type T>
 JSTypedArrayType jscArrayType() { return jscTypeMap<T>::type; }
@@ -35,7 +37,7 @@ JSTypedArrayType jscArrayType() { return jscTypeMap<T>::type; }
 //
 // JSCRuntime fake implementation that is binary compatible with jsi/JSCRuntime.cpp.
 // With reinterpret_cast we can get access to private internal of this runtime.
-class JSCRuntime : public jsi::Runtime{
+class JSCRuntime : public jsi::Runtime {
 public:
   JSGlobalContextRef ctx;
   std::atomic<bool> ctxInvalid;

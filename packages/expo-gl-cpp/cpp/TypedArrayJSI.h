@@ -29,17 +29,18 @@ private:
   // associate type of an array with type of a content
   template<Type> struct typeMap;
 
-  template<> struct typeMap<Int8Array> { typedef int8_t type; };
-  template<> struct typeMap<Int16Array> { typedef int16_t type; };
-  template<> struct typeMap<Int32Array> { typedef int32_t type; };
-  template<> struct typeMap<Uint8Array> { typedef uint8_t type; };
-  template<> struct typeMap<Uint8ClampedArray> { typedef uint8_t type; };
-  template<> struct typeMap<Uint16Array> { typedef uint16_t type; };
-  template<> struct typeMap<Uint32Array> { typedef uint32_t type; };
-  template<> struct typeMap<Float32Array> { typedef float type; };
-  template<> struct typeMap<Float64Array> { typedef double type; };
-  template<> struct typeMap<ArrayBuffer> { typedef uint8_t type; };
-  template<> struct typeMap<None> { typedef uint8_t type; };
+#define TYPE_MAP(array, cell) template<> struct typeMap<array> { typedef cell type; }
+  TYPE_MAP(Int8Array, int8_t);
+  TYPE_MAP(Int16Array, int16_t);
+  TYPE_MAP(Int32Array, int32_t);
+  TYPE_MAP(Uint8Array, uint8_t);
+  TYPE_MAP(Uint8ClampedArray, uint8_t);
+  TYPE_MAP(Uint16Array, uint16_t);
+  TYPE_MAP(Uint32Array, uint32_t);
+  TYPE_MAP(Float32Array, float);
+  TYPE_MAP(Float64Array, double);
+  TYPE_MAP(ArrayBuffer, uint8_t);
+#undef TYPE_MAP
 
 public:
   template<Type T>
