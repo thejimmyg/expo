@@ -9,7 +9,7 @@ import java.util.List;
 
 import expo.modules.notifications.notifications.interfaces.NotificationBuilder;
 import expo.modules.notifications.notifications.interfaces.NotificationBuilderFactory;
-import expo.modules.notifications.notifications.presentation.builders.ExpoNotificationBuilder;
+import expo.modules.notifications.notifications.presentation.builders.BadgeSettingNotificationBuilder;
 
 public class ExpoNotificationBuilderFactory implements InternalModule, NotificationBuilderFactory {
   @Override
@@ -19,6 +19,6 @@ public class ExpoNotificationBuilderFactory implements InternalModule, Notificat
 
   @Override
   public NotificationBuilder createBuilder(Context context) {
-    return new ExpoNotificationBuilder(context);
+    return new BadgeSettingNotificationBuilder(context);
   }
 }

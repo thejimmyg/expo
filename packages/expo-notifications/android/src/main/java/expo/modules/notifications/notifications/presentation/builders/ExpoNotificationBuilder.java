@@ -4,7 +4,6 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.Context;
 import android.os.Build;
-import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -15,7 +14,6 @@ import org.json.JSONObject;
 
 import androidx.core.app.NotificationCompat;
 import expo.modules.notifications.notifications.interfaces.NotificationBuilder;
-import me.leolin.shortcutbadger.ShortcutBadger;
 
 public class ExpoNotificationBuilder implements NotificationBuilder {
   private static final String REMOTE_MESSAGE_DATA_NOTIFICATION_KEY = "notification";
@@ -23,9 +21,6 @@ public class ExpoNotificationBuilder implements NotificationBuilder {
   private static final String CONTENT_TITLE_KEY = "title";
   private static final String CONTENT_TEXT_KEY = "body";
   private static final String SOUND_KEY = "sound";
-  private static final String BADGE_KEY = "badge";
-
-  public static final String EXTRAS_BADGE_KEY = "badge";
 
   private static final long[] NO_VIBRATE_PATTERN = new long[]{0, 0};
 
@@ -44,6 +39,14 @@ public class ExpoNotificationBuilder implements NotificationBuilder {
     String notificationRequestString = remoteMessage.getData().get(REMOTE_MESSAGE_DATA_NOTIFICATION_KEY);
     mNotificationRequest = new JSONObject(notificationRequestString);
     return this;
+  }
+
+  protected Context getContext() {
+    return mContext;
+  }
+
+  protected JSONObject getNotificationRequest() {
+    return mNotificationRequest;
   }
 
   protected NotificationCompat.Builder createBuilder() {
@@ -74,33 +77,12 @@ public class ExpoNotificationBuilder implements NotificationBuilder {
       builder.setVibrate(NO_VIBRATE_PATTERN);
     }
 
-    // Maybe this code should be extracted to a separate
-    // ExpoBadgeCompatibleNotificationBuilder.
-    if (shouldSetBadge()) {
-      // Forward information about badge count to set
-      // to SetBadgeCountNotificationEffect.
-      Bundle extras = builder.getExtras();
-      extras.putInt(EXTRAS_BADGE_KEY, getBadgeCount());
-      builder.setExtras(extras);
-    }
-
     return builder;
   }
 
   @Override
   public Notification build() {
-    Notification notification = createBuilder().build();
-
-    // Maybe this code should be extracted to a separate
-    // ExpoBadgeCompatibleNotificationBuilder.
-    if (shouldSetBadge()) {
-      // Xiaomi devices require this extra notification configuration step
-      // https://github.com/leolin310148/ShortcutBadger/wiki/Xiaomi-Device-Support
-      // Badge for other devices is set as an effect in SetBadgeCountNotificationEffect
-      ShortcutBadger.applyNotification(mContext, notification, getBadgeCount());
-    }
-
-    return notification;
+    return createBuilder().build();
   }
 
   protected String getChannelId() {
@@ -115,10 +97,6 @@ public class ExpoNotificationBuilder implements NotificationBuilder {
     return NotificationChannel.DEFAULT_CHANNEL_ID;
   }
 
-  private int getBadgeCount() {
-    return mNotificationRequest.optInt(BADGE_KEY);
-  }
-
   // Behavior
 
   private boolean shouldShowAlert() {
@@ -127,9 +105,5 @@ public class ExpoNotificationBuilder implements NotificationBuilder {
 
   private boolean shouldPlaySound() {
     return mNotificationRequest.optBoolean(SOUND_KEY);
-  }
-
-  private boolean shouldSetBadge() {
-    return mNotificationRequest.has(BADGE_KEY);
   }
 }
