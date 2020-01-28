@@ -25,10 +25,15 @@ class SplashScreenView(activity: Activity, private val container: ViewGroup, mod
     }
     imageView.scaleType = mode.scaleType
     when (mode) {
-      SplashScreenMode.NATIVE -> imageView.setImageDrawable(resources.getDrawable(R.drawable.splashscreen))
-      else -> {
+      SplashScreenMode.NATIVE -> {
+        imageView.setImageResource(R.drawable.splashscreen)
+      }
+      SplashScreenMode.CONTAIN -> {
         imageView.setImageResource(R.drawable.splashscreen_image)
         imageView.adjustViewBounds = true
+      }
+      SplashScreenMode.COVER -> {
+        imageView.setImageResource(R.drawable.splashscreen_image)
       }
     }
   }

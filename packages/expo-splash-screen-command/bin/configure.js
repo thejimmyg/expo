@@ -1,16 +1,5 @@
 #!/usr/bin/env node
 "use strict";
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -24,7 +13,7 @@ const constants_1 = require("./constants");
 const configureAndroidSplashScreen_1 = __importDefault(require("./configureAndroidSplashScreen"));
 const configureIosSplashScreen_1 = __importDefault(require("./configureIosSplashScreen"));
 async function action(configuration) {
-    const { platform } = configuration, restParams = __rest(configuration, ["platform"]);
+    const { platform, ...restParams } = configuration;
     switch (platform) {
         case constants_1.Platform.ANDROID:
             await configureAndroidSplashScreen_1.default(restParams);
@@ -75,7 +64,10 @@ async function validateConfiguration(configuration) {
         console.log(chalk_1.default.red(`\nProvided invalid argument ${chalk_1.default.yellow(configuration.backgroundColor)} as backgroundColor. See below for available formats for this argument.\n`));
         commander_1.default.help();
     }
-    return Object.assign(Object.assign({}, configuration), { backgroundColor: color_string_1.default.to.hex(backgroundColor.value) });
+    return {
+        ...configuration,
+        backgroundColor: color_string_1.default.to.hex(backgroundColor.value),
+    };
 }
 async function runAsync() {
     commander_1.default

@@ -93,7 +93,7 @@ object SplashScreen {
   }
 
   /**
-   * Waits for React Views Hierarchy to be mounted and once it happens fires callback.
+   * Waits for React Views Hierarchy to be mounted and once it happens fires callback, but only if autohiding is still enabled
    * @param hierarchyMountedCallback Callback to be called when React Views Hierarchy is detected.
    */
   private fun checkReactViewHierarchy(hierarchyMountedCallback: () -> Unit) {
@@ -102,7 +102,12 @@ object SplashScreen {
       return
     }
     if (reactRoot.childCount > 0) {
-      hierarchyMountedCallback()
+      handler.postDelayed({
+        // wait a little for possible `SplashScreen.preventAutoHide` from JS before autohiding
+        if (autohideEnabled) {
+          hierarchyMountedCallback()
+        }
+      }, VIEW_TEST_INTERVAL_MS)
     } else {
       if (autohideEnabled) {
         handler.postDelayed({ checkReactViewHierarchy(hierarchyMountedCallback) }, VIEW_TEST_INTERVAL_MS)

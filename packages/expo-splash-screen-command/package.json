@@ -33,12 +33,16 @@
   "author": "650 Industries, Inc.",
   "license": "MIT",
   "homepage": "https://docs.expo.io/versions/latest/sdk/module-template",
+  "engines": {
+    "node": ">=10"
+  },
   "dependencies": {
     "@expo/commander": "^2.21.1",
     "@react-native-community/cli-platform-android": "^3.0.3",
     "@react-native-community/cli-platform-ios": "^3.0.0",
     "chalk": "^3.0.0",
     "color-string": "^1.5.3",
+    "core-js": "^3.6.4",
     "expo-module-scripts": "^1.1.1",
     "fs-extra": "^8.1.0",
     "inquirer": "^7.0.1"

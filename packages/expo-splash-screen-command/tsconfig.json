@@ -1,9 +1,9 @@
 {
   "extends": "expo-module-scripts/tsconfig.base",
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2018",
     "module": "CommonJS",
-    "lib": ["ESNext"],
+    "lib": ["es2018", "es2020.string"],
     "outDir": "./bin"
   },
   "include": ["./src"],
