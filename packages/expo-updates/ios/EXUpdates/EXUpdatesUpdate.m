@@ -2,12 +2,18 @@
 
 #import <EXUpdates/EXUpdatesAppController.h>
 #import <EXUpdates/EXUpdatesAppLoaderEmbedded.h>
+#import <EXUpdates/EXUpdatesConfig.h>
 #import <EXUpdates/EXUpdatesDatabase.h>
 #import <EXUpdates/EXUpdatesUpdate.h>
 #import <EXUpdates/EXUpdatesUtils.h>
 #import <React/RCTConvert.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
+static NSString * const kEXUpdatesExpoAssetBaseUrl = @"https://d1wp6m56sqw74a.cloudfront.net/~assets/";
+static NSString * const kEXUpdatesExpoIoDomain = @"expo.io";
+static NSString * const kEXUpdatesExpHostDomain = @"exp.host";
+static NSString * const kEXUpdatesExpoTestDomain = @"expo.test";
 
 @interface EXUpdatesUpdate ()
 
@@ -32,7 +38,6 @@ NS_ASSUME_NONNULL_BEGIN
 {
   if (self = [super init]) {
     _rawManifest = manifest;
-    _bundledAssetBaseUrl = [NSURL URLWithString:@"https://d1wp6m56sqw74a.cloudfront.net/~assets/"];
   }
   return self;
 }
@@ -223,6 +228,24 @@ runtimeVersion:(NSString *)runtimeVersion
     NSAssert(_assets, @"Assets should be nonnull when selected from DB: %@", error.localizedDescription);
   }
   return _assets;
+}
+
+- (NSURL *)bundledAssetBaseUrl
+{
+  if (!_bundledAssetBaseUrl) {
+    NSURL *manifestUrl = [EXUpdatesConfig sharedInstance].remoteUrl;
+    NSString *host = manifestUrl.host;
+    if (!host ||
+        [host containsString:kEXUpdatesExpoIoDomain] ||
+        [host containsString:kEXUpdatesExpHostDomain] ||
+        [host containsString:kEXUpdatesExpoTestDomain]) {
+      _bundledAssetBaseUrl = [NSURL URLWithString:kEXUpdatesExpoAssetBaseUrl];
+    } else {
+      NSString *assetsPath = _rawManifest[@"assetUrlOverride"] ?: @"assets";
+      _bundledAssetBaseUrl = [manifestUrl.URLByDeletingLastPathComponent URLByAppendingPathComponent:assetsPath];
+    }
+  }
+  return _bundledAssetBaseUrl;
 }
 
 @end
