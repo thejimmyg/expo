@@ -10,12 +10,7 @@
     ],
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "icon": "./assets/icon-dark.png",
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -28,6 +23,16 @@
     },
     "packagerOpts": {
       "config": "metro.config.js"
+    },
+    "androidStatusBar": {
+      "translucent": true
+    },
+    "android": {
+      "splashscreen": {
+        "backgroundColor": "#22bb00",
+        "imagePath": "./assets/splashscreen-triangle-blue.png",
+        "mode": "contain"
+      }
     }
   }
 }
