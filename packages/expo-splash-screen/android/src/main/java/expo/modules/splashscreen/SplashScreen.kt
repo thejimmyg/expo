@@ -1,4 +1,4 @@
-package main.kotlin.expo.modules.splashscreen
+package expo.modules.splashscreen
 
 import android.app.Activity
 import android.os.Handler
@@ -9,40 +9,49 @@ import com.facebook.react.ReactRootView
 import java.lang.ref.WeakReference
 
 object SplashScreen {
-  private const val LOG_TAG = "SPLASH"
+  private const val TAG = "SplashScreen"
   private const val VIEW_TEST_INTERVAL_MS = 20L
 
   private val handler = Handler()
 
   private var activity: WeakReference<Activity>? = null
-  private var splashScreenView: SplashScreenView? = null
-  private var autohideEnabled = true
+  private var splashScreenViewContainer: ViewGroup? = null
+  private var splashScreenView: View? = null
+  private var autoHideEnabled = true
 
   /**
    * Show SplashScreen by mounting it next to the React Root View and completely covering it.
    * @param successCallback Callback to be called once SplashScreen is mounted in view hierarchy.
    * @param failureCallback Callback to be called once SplashScreen cannot be mounted.
+   * @return Lambda function that would trigger finding valid viewHierarchy - Useful when ReactView root view isn't mounted from the start.
    */
   @JvmStatic
   @JvmOverloads
   fun show(
     activity: Activity,
     mode: SplashScreenMode,
+    splashScreenConfigurator: SplashScreenConfigurator = ResourcesBasedSplashScreenConfigurator(),
     successCallback: () -> Unit = {},
-    failureCallback: (reason: String) -> Unit = { Log.w(LOG_TAG, it) }
-  ) {
-    this.activity = WeakReference(activity)
+    failureCallback: (reason: String) -> Unit = { Log.w(TAG, it) }
+  ): () -> Unit {
+    SplashScreen.activity = WeakReference(activity)
     activity.runOnUiThread {
       if (splashScreenView != null) {
         return@runOnUiThread failureCallback("Native SplashScreen is already mounted.")
       }
-      splashScreenView = findContainerForSplashScreen(activity)?.let { SplashScreenView(activity, it, mode) }
-        ?: return@runOnUiThread failureCallback("View hierarchy isn't ready to mount Native SplashScreen.")
-      splashScreenView!!.show().also { successCallback() }
+      splashScreenViewContainer = findContainerForSplashScreen(activity)
+      if (splashScreenViewContainer == null) {
+        return@runOnUiThread failureCallback("View hierarchy isn't ready to mount Native SplashScreen.")
+      }
+      splashScreenView = SplashScreenView(activity, mode, splashScreenConfigurator)
+      splashScreenViewContainer!!.addView(splashScreenView).also { successCallback() }
 
       // launch autohide process
-      checkReactViewHierarchy { this.hide({}, {}) }
+      if (autoHideEnabled) {
+        searchForReactViewHierarchy({ hide({}, {}) })
+      }
     }
+    return { searchForReactViewHierarchy({ hide({}, {}) }) }
   }
 
   /**
@@ -50,14 +59,14 @@ object SplashScreen {
    * @param successCallback Callback to be called once SplashScreen could be successfully prevented from autohinding.
    * @param failureCallback Callback to be called upon failure in preventing SplashScreen from autohiding.
    */
-  fun preventAutohide(
+  fun preventAutoHide(
     successCallback: () -> Unit,
     failureCallback: (reason: String) -> Unit
   ) {
-    if (this.autohideEnabled && this.splashScreenView != null) {
-      this.autohideEnabled = false
+    if (autoHideEnabled && splashScreenView != null) {
+      autoHideEnabled = false
       successCallback()
-    } else if (!this.autohideEnabled) {
+    } else if (!autoHideEnabled) {
       failureCallback("Native SplashScreen autohiding is already prevented.")
     } else {
       failureCallback("Native SplashScreen is already hidden.")
@@ -73,19 +82,20 @@ object SplashScreen {
     successCallback: () -> Unit,
     failureCallback: (reason: String) -> Unit
   ) {
-    val activity = this.activity?.get() ?: return failureCallback("Activity is no longer present.")
+    val activity = activity?.get() ?: return failureCallback("Activity is no longer present.")
     activity.runOnUiThread {
       @Suppress("NAME_SHADOWING")
-      val activity = this.activity?.get()
+      val activity = SplashScreen.activity?.get()
         ?: return@runOnUiThread failureCallback("Activity is no longer present.")
       if (!activity.isFinishing && !activity.isDestroyed) {
-        val splashScreenView = this.splashScreenView
+        val splashScreenView = splashScreenView
           ?: return@runOnUiThread failureCallback("Native SplashScreen is already hidden.")
-        splashScreenView.hide().also { successCallback() }
+        splashScreenViewContainer?.removeView(splashScreenView).also { successCallback() }
+          ?: return@runOnUiThread failureCallback("Native SplashScreen container is not available.")
 
         // restore initial state
-        this.splashScreenView = null
-        this.autohideEnabled = true
+        SplashScreen.splashScreenView = null
+        autoHideEnabled = true
       } else {
         return@runOnUiThread failureCallback("Activity is not operable.")
       }
@@ -96,21 +106,21 @@ object SplashScreen {
    * Waits for React Views Hierarchy to be mounted and once it happens fires callback, but only if autohiding is still enabled
    * @param hierarchyMountedCallback Callback to be called when React Views Hierarchy is detected.
    */
-  private fun checkReactViewHierarchy(hierarchyMountedCallback: () -> Unit) {
-    val reactRoot: ViewGroup = activity?.get()?.let { findReactRootView(it) } ?: run {
-      Log.w(LOG_TAG, "Couldn't find valid view hierarchy nor valid activity.")
+  private fun searchForReactViewHierarchy(hierarchyMountedCallback: () -> Unit, reactRootView: ViewGroup? = null) {
+    val reactRoot: ViewGroup = reactRootView ?: activity?.get()?.let { findReactRootView(it) } ?: run {
+      Log.w(TAG, "Couldn't find valid React Root View nor valid activity.")
       return
     }
     if (reactRoot.childCount > 0) {
       handler.postDelayed({
         // wait a little for possible `SplashScreen.preventAutoHide` from JS before autohiding
-        if (autohideEnabled) {
+        if (autoHideEnabled) {
           hierarchyMountedCallback()
         }
       }, VIEW_TEST_INTERVAL_MS)
     } else {
-      if (autohideEnabled) {
-        handler.postDelayed({ checkReactViewHierarchy(hierarchyMountedCallback) }, VIEW_TEST_INTERVAL_MS)
+      if (autoHideEnabled) {
+        handler.postDelayed({ searchForReactViewHierarchy(hierarchyMountedCallback, reactRoot) }, VIEW_TEST_INTERVAL_MS)
       }
     }
   }

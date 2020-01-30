@@ -1,4 +1,4 @@
-package main.kotlin.expo.modules.splashscreen
+package expo.modules.splashscreen
 
 import android.content.Context
 
@@ -21,7 +21,7 @@ class SplashScreenModule(context: Context) : ExportedModule(context) {
 
   @ExpoMethod
   fun preventAutoHideAsync(promise: Promise) {
-    SplashScreen.preventAutohide(
+    SplashScreen.preventAutoHide(
       { promise.resolve(null) },
       { m -> promise.reject(ERROR_TAG, m) }
     )

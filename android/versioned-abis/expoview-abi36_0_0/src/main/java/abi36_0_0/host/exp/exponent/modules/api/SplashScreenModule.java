@@ -3,17 +3,16 @@ package abi36_0_0.host.exp.exponent.modules.api;
 import abi36_0_0.com.facebook.react.bridge.ReactApplicationContext;
 
 import host.exp.exponent.kernel.ExperienceId;
-import host.exp.exponent.kernel.services.SplashScreenKernelService;
 import abi36_0_0.host.exp.exponent.modules.ExpoKernelServiceConsumerBaseModule;
 import abi36_0_0.com.facebook.react.bridge.ReactMethod;
 
 public class SplashScreenModule extends ExpoKernelServiceConsumerBaseModule {
 
-  private SplashScreenKernelService mSplashScreenKernelService;
+//  private SplashScreenKernelService mSplashScreenKernelService;
 
   public SplashScreenModule(ReactApplicationContext reactContext, ExperienceId experienceId) {
     super(reactContext, experienceId);
-    mSplashScreenKernelService = mKernelServiceRegistry.getSplashScreenKernelService();
+//    mSplashScreenKernelService = mKernelServiceRegistry.getSplashScreenKernelService();
   }
 
   @Override
@@ -23,11 +22,11 @@ public class SplashScreenModule extends ExpoKernelServiceConsumerBaseModule {
 
   @ReactMethod
   public void preventAutoHide() {
-    mSplashScreenKernelService.preventAutoHide();
+//    mSplashScreenKernelService.preventAutoHide();
   }
 
   @ReactMethod
   public void hide() {
-    mSplashScreenKernelService.onExperienceContentsLoaded(this.experienceId);
+//    mSplashScreenKernelService.onExperienceContentsLoaded(this.experienceId);
   }
 }

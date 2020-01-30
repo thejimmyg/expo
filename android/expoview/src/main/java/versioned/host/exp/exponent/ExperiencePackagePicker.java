@@ -54,6 +54,7 @@ import expo.modules.securestore.SecureStorePackage;
 import expo.modules.sensors.SensorsPackage;
 import expo.modules.sms.SMSPackage;
 import expo.modules.speech.SpeechPackage;
+import expo.modules.splashscreen.SplashScreenPackage;
 import expo.modules.sqlite.SQLitePackage;
 import expo.modules.taskManager.TaskManagerPackage;
 import expo.modules.videothumbnails.VideoThumbnailsPackage;
@@ -110,6 +111,7 @@ public class ExperiencePackagePicker {
       new SensorsPackage(),
       new SharingPackage(),
       new SpeechPackage(),
+      new SplashScreenPackage(),
       new StripePackage(),
       new TaskManagerPackage(),
       new VideoThumbnailsPackage(),

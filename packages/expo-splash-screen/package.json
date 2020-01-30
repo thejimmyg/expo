@@ -2,8 +2,8 @@
   "name": "expo-splash-screen",
   "version": "1.0.0",
   "description": "ExpoSplashScreen standalone module",
-  "main": "build/SplashScreen.js",
-  "types": "build/SplashScreen.d.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
     "build": "expo-module build",
     "clean": "expo-module clean",

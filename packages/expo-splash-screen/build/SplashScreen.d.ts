@@ -1,5 +1,3 @@
-export { default as AppLoading } from './AppLoading';
-export * from './AppLoading';
 /**
  * Makes the native splash screen stay visible until `SplashScreen.hideAsync()` is called.
  * It has to ba celled before any View is created.
@@ -23,3 +21,11 @@ export * from './AppLoading';
  */
 export declare function preventAutoHideAsync(): Promise<any>;
 export declare function hideAsync(): Promise<any>;
+/**
+ * @deprecated
+ */
+export declare function hide(): Promise<any>;
+/**
+ * @deprecated
+ */
+export declare function preventAutoHide(): Promise<any>;

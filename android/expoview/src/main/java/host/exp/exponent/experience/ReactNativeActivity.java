@@ -9,17 +9,17 @@ import android.content.pm.PermissionInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Process;
 import android.provider.Settings;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AlertDialog;
+
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.facebook.infer.annotation.Assertions;
@@ -45,11 +45,11 @@ import de.greenrobot.event.EventBus;
 import host.exp.exponent.ABIVersion;
 import host.exp.exponent.Constants;
 import host.exp.exponent.ExponentManifest;
-import host.exp.exponent.LoadingView;
 import host.exp.exponent.RNObject;
 import host.exp.exponent.analytics.Analytics;
 import host.exp.exponent.analytics.EXL;
 import host.exp.exponent.di.NativeModuleDepsProvider;
+import host.exp.exponent.experience.SplashScreen.ExperienceSplashScreen;
 import host.exp.exponent.kernel.ExperienceId;
 import host.exp.exponent.kernel.ExponentError;
 import host.exp.exponent.kernel.ExponentErrorMessage;
@@ -57,14 +57,11 @@ import host.exp.exponent.kernel.KernelConstants;
 import host.exp.exponent.kernel.KernelProvider;
 import host.exp.exponent.kernel.services.ErrorRecoveryManager;
 import host.exp.exponent.kernel.services.ExpoKernelServiceRegistry;
-import host.exp.exponent.kernel.services.SplashScreenKernelService;
 import host.exp.exponent.notifications.ExponentNotification;
 import host.exp.exponent.storage.ExponentSharedPreferences;
-import host.exp.exponent.utils.ExperienceActivityUtils;
 import host.exp.exponent.utils.JSONBundleConverter;
 import host.exp.exponent.utils.ScopedPermissionsRequester;
 import host.exp.expoview.Exponent;
-import host.exp.expoview.R;
 import versioned.host.exp.exponent.ExponentPackage;
 
 import static host.exp.exponent.kernel.KernelConstants.INTENT_URI_KEY;
@@ -84,19 +81,13 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   }
 
   // Override
-  protected void onDoneLoading() {
-
-  }
+  protected void onDoneLoading() {}
 
   // Override
   // Will be called after waitForDrawOverOtherAppPermission
-  protected void startReactInstance() {
-
-  }
+  protected void startReactInstance() {}
 
   private static final String TAG = ReactNativeActivity.class.getSimpleName();
-
-  private static final long VIEW_TEST_INTERVAL_MS = 20;
 
   protected RNObject mReactInstanceManager = new RNObject("com.facebook.react.ReactInstanceManager");
   protected boolean mIsCrashed = false;
@@ -112,13 +103,9 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   protected String mDetachSdkVersion;
 
   protected RNObject mReactRootView;
-  private FrameLayout mLayout;
+  private ExperienceSplashScreen mExperienceSplashScreen;
   private FrameLayout mContainer;
-  private LoadingView mLoadingView;
-  private Handler mHandler = new Handler();
-  private Handler mLoadingHandler = new Handler();
   private DoubleTapReloadRecognizer mDoubleTapReloadRecognizer;
-  private SplashScreenKernelService mSplashScreenKernelService;
   protected boolean mIsLoading = true;
   protected String mJSBundlePath;
   protected JSONObject mManifest;
@@ -133,10 +120,6 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   @Inject
   ExpoKernelServiceRegistry mExpoKernelServiceRegistry;
 
-  public boolean isLoading() {
-    return mIsLoading;
-  }
-
   public boolean isInForeground() {
     return mIsInForeground;
   }
@@ -144,47 +127,28 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   public View getRootView() {
     if (mReactRootView == null) {
       return null;
-    } else {
-      return (View) mReactRootView.get();
     }
+    return (View) mReactRootView.get();
   }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(null);
-
-    mLayout = new FrameLayout(this);
-    setContentView(mLayout);
+    mExperienceSplashScreen = new ExperienceSplashScreen(this);
 
     mContainer = new FrameLayout(this);
-    mLayout.addView(mContainer);
-    mLoadingView = new LoadingView(this);
-    if (!Constants.isStandaloneApp() || Constants.SHOW_LOADING_VIEW_IN_SHELL_APP) {
-      mContainer.setBackgroundColor(ContextCompat.getColor(this, R.color.splashBackground));
-      mLayout.addView(mLoadingView);
-    }
+    setContentView(mContainer);
 
     mDoubleTapReloadRecognizer = new DoubleTapReloadRecognizer();
     Exponent.initialize(this, getApplication());
     NativeModuleDepsProvider.getInstance().inject(ReactNativeActivity.class, this);
-    mSplashScreenKernelService = mExpoKernelServiceRegistry.getSplashScreenKernelService();
 
     // Can't call this here because subclasses need to do other initialization
     // before their listener methods are called.
     // EventBus.getDefault().registerSticky(this);
   }
 
-  protected void setView(final View view) {
-    mContainer.removeAllViews();
-    if (Constants.isStandaloneApp() && Constants.SHOW_LOADING_VIEW_IN_SHELL_APP) {
-      ViewGroup.LayoutParams layoutParams = mContainer.getLayoutParams();
-      layoutParams.height = 0;
-      mContainer.setLayoutParams(layoutParams);
-    }
-    addView(view);
-  }
-
-  protected void addView(final View view) {
+  protected void setReactNativeRootView(final View view) {
     removeViewFromParent(view);
     mContainer.addView(view);
   }
@@ -195,93 +159,62 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
     }
   }
 
-  protected void stopLoading() {
-    if (!mIsLoading || !canHideLoadingScreen()) {
-      return;
-    }
-    mHandler.removeCallbacksAndMessages(null);
-    hideLoadingScreen();
+  protected void addView(final View view) {
+    mContainer.addView(view);
+  }
+
+  protected void removeContentViews() {
+    mContainer.removeAllViews();
+  }
+
+  // region Loading with SplashScreen
+
+  /**
+   * Indicates whether JS Bundle is being loaded and SplashScreen with LoadingBar is presented.
+   */
+  public boolean isLoading() {
+    return mIsLoading;
+  }
+
+  public void startLoading(@Nullable JSONObject manifest) {
+    mIsLoading = true;
+    mExperienceSplashScreen.showSplashScreen(manifest);
   }
 
   protected void updateLoadingProgress(String status, Integer done, Integer total) {
     if (!mIsLoading) {
-      showLoadingScreen(mManifest);
+      startLoading(mManifest);
     }
-    mLoadingView.updateProgress(status, done, total);
+    mExperienceSplashScreen.updateLoadingProgress(status, done, total);
   }
 
-  protected void removeViews() {
-    mContainer.removeAllViews();
-  }
-
-  // Loop until a view is added to the React root view.
-  protected void checkForReactViews() {
-    if (mReactRootView.isNull()) {
+  /**
+   * Marks loading as completed and possibly hide SplashScreen.
+   */
+  protected void finishLoading() {
+    if (!mIsLoading) {
+      Log.w(TAG, "Finish loading despite no loading in progress.");
       return;
     }
 
-    if ((int) mReactRootView.call("getChildCount") > 0) {
-      if (canHideLoadingScreen()) {
-        fadeLoadingScreen();
-      }
+    mExperienceSplashScreen.finishLoading(() -> {
+      EventBus.getDefault().post(new ExperienceDoneLoadingEvent());
       onDoneLoading();
       ErrorRecoveryManager.getInstance(mExperienceId).markExperienceLoaded();
-
       pollForEventsToSendToRN();
-    } else {
-      mHandler.postDelayed(new Runnable() {
-        @Override
-        public void run() {
-          checkForReactViews();
-        }
-      }, VIEW_TEST_INTERVAL_MS);
-    }
-  }
-
-  public void showLoadingScreen(JSONObject manifest) {
-    mLoadingView.setManifest(manifest);
-    mLoadingView.setShowIcon(true);
-    mLoadingView.clearAnimation();
-    mLoadingView.setAlpha(1.0f);
-    mIsLoading = true;
-  }
-
-  private void fadeLoadingScreen() {
-    if (!mIsLoading) {
-      return;
-    }
-    runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        hideLoadingScreen();
-        EventBus.getDefault().post(new ExperienceDoneLoadingEvent());
-      }
     });
   }
 
-  private void hideLoadingScreen() {
-    if (Constants.isStandaloneApp() && Constants.SHOW_LOADING_VIEW_IN_SHELL_APP) {
-      ViewGroup.LayoutParams layoutParams = mContainer.getLayoutParams();
-      layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-      mContainer.setLayoutParams(layoutParams);
+  protected void interruptLoading(Exception error) {
+    if (!mIsLoading) {
+      Log.w(TAG, "Interrupt loading despite no loading in progress.");
+      return;
     }
-
-    ExperienceActivityUtils.setRootViewBackgroundColor(mManifest, getRootView());
-
-    if (mLoadingView != null && mLoadingView.getParent() == mLayout) {
-      mLoadingView.setAlpha(0.0f);
-      mLoadingView.setShowIcon(false);
-      mLoadingView.setDoneLoading();
-    }
-
-    mSplashScreenKernelService.reset();
     mIsLoading = false;
-    mLoadingHandler.removeCallbacksAndMessages(null);
+    mExperienceSplashScreen.interruptLoading(error);
   }
 
-  private boolean canHideLoadingScreen() {
-    return (!mSplashScreenKernelService.isAppLoadingStarted() || mSplashScreenKernelService.isAppLoadingFinished()) && mSplashScreenKernelService.shouldAutoHide();
-  }
+  // endregion
 
   @Override
   public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -300,7 +233,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
         if (didDoubleTapR && !shouldReloadFromManifest) {
           // The loading screen is hidden by versioned code when reloading JS so we can't show it
           // on older sdks.
-          showLoadingScreen(mManifest);
+          startLoading(mManifest);
           devSupportManager.call("handleReloadJS");
           return true;
         } else if (didDoubleTapR && shouldReloadFromManifest) {
@@ -353,8 +286,6 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
       mReactInstanceManager.call("destroy");
     }
 
-    mHandler.removeCallbacksAndMessages(null);
-    mLoadingHandler.removeCallbacksAndMessages(null);
     EventBus.getDefault().unregister(this);
   }
 
@@ -472,7 +403,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
           .construct(progressListener);
       builder.callRecursive("setDevBundleDownloadListener", devBundleDownloadListener.get());
     } else {
-      checkForReactViews();
+      finishLoading();
     }
 
     Bundle bundle = new Bundle();
@@ -539,7 +470,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
     if (devSettings != null) {
       devSettings.setField("exponentActivityId", mActivityId);
       if ((boolean) devSettings.call("isRemoteJSDebugEnabled")) {
-        checkForReactViews();
+        finishLoading();
       }
     }
 
@@ -590,10 +521,6 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
     if (mManifestUrl != null && mManifestUrl.equals(event.manifestUrl)) {
       pollForEventsToSendToRN();
     }
-  }
-
-  public void onEvent(BaseExperienceActivity.ExperienceContentLoaded event) {
-    fadeLoadingScreen();
   }
 
   private void pollForEventsToSendToRN() {

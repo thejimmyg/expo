@@ -32,6 +32,7 @@ import expo.modules.font.FontLoaderPackage;
 import expo.modules.keepawake.KeepAwakePackage;
 import expo.modules.medialibrary.MediaLibraryPackage;
 import expo.modules.permissions.PermissionsPackage;
+import expo.modules.splashscreen.SplashScreenPackage;
 import expo.modules.taskManager.TaskManagerPackage;
 import host.exp.exponent.Constants;
 import host.exp.exponent.ExponentManifest;
@@ -62,7 +63,7 @@ public class HomeActivity extends BaseExperienceActivity {
 
     EventBus.getDefault().registerSticky(this);
     mKernel.startJSKernel(this);
-    showLoadingScreen(null);
+    startLoading(null);
 
     tryInstallLeakCanary(true);
   }
@@ -104,8 +105,8 @@ public class HomeActivity extends BaseExperienceActivity {
     mReactInstanceManager.assign(mKernel.getReactInstanceManager());
     mReactRootView.assign(mKernel.getReactRootView());
     mReactInstanceManager.onHostResume(this, this);
-    setView((View) mReactRootView.get());
-    checkForReactViews();
+    setReactNativeRootView((View) mReactRootView.get());
+    finishLoading();
 
     if (Constants.DEBUG_COLD_START_METHOD_TRACING) {
       Debug.stopMethodTracing();
@@ -130,7 +131,8 @@ public class HomeActivity extends BaseExperienceActivity {
         new CameraPackage(),
         new FaceDetectorPackage(),
         new MediaLibraryPackage(),
-        new TaskManagerPackage() // load expo-task-manager to restore tasks once the client is opened
+        new TaskManagerPackage(), // load expo-task-manager to restore tasks once the client is opened
+        new SplashScreenPackage()
     );
   }
 }

@@ -5,22 +5,21 @@ type Props = {
   autoHideSplash?: boolean;
 };
 
-export default class AppLoading extends React.Component<Props> {
-  constructor(props: Props) {
-    super(props);
-    // SplashScreen.preventAutoHide();
-  }
+// TODO: it should work like this - no call to this component -> no preventAutoHide, but keep in mind that preventAutoHideAsync has to be called before react native's view hierarchy is mounted
+SplashScreen.preventAutoHideAsync();
 
+export default class AppLoading extends React.Component<Props> {
   componentWillUnmount() {
     if (this.props.autoHideSplash === undefined || this.props.autoHideSplash) {
       // Hide immediately in E2E tests
-      // if (global.__E2E__) {
-      //   // SplashScreen.hide();
-      // } else {
-      //   setTimeout(() => {
-      //     // SplashScreen.hide();
-      //   }, 200);
-      // }
+      // @ts-ignore
+      if (global.__E2E__) {
+        SplashScreen.hideAsync();
+      } else {
+        setTimeout(() => {
+          SplashScreen.hideAsync();
+        }, 200);
+      }
     }
   }
 

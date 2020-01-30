@@ -1,6 +1,7 @@
-package main.kotlin.expo.modules.splashscreen
+package expo.modules.splashscreen
 
 import android.content.Context
+import expo.modules.splashscreen.SplashScreenModule
 
 import org.unimodules.core.BasePackage
 import org.unimodules.core.ExportedModule

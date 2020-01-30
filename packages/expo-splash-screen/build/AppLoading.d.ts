@@ -10,11 +10,11 @@ declare type Props = {
     onError: null;
     onFinish: null;
 };
-export default class AppLoading extends React.Component<Props> {
-    _isMounted: boolean;
+export declare class AppLoading extends React.Component<Props> {
+    isMounted: boolean;
     componentDidMount(): void;
     componentWillUnmount(): void;
-    _startLoadingAppResourcesAsync: () => Promise<void>;
+    startLoadingAppResourcesAsync: () => Promise<void>;
     render(): JSX.Element;
 }
 export declare function getAppLoadingLifecycleEmitter(): EventEmitter;

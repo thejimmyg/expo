@@ -1,7 +1,5 @@
 import { UnavailabilityError } from '@unimodules/core';
 import ExpoSplashScreen from './ExpoSplashScreen';
-export { default as AppLoading } from './AppLoading';
-export * from './AppLoading';
 /**
  * Makes the native splash screen stay visible until `SplashScreen.hideAsync()` is called.
  * It has to ba celled before any View is created.
@@ -34,5 +32,19 @@ export async function hideAsync() {
         throw new UnavailabilityError('expo-splash-screen', 'hideAsync');
     }
     return await ExpoSplashScreen.hideAsync();
+}
+/**
+ * @deprecated
+ */
+export function hide() {
+    console.warn('SplashScreen.hide() is deprecated in favour of SplashScreen.hideAsync()');
+    return hideAsync();
+}
+/**
+ * @deprecated
+ */
+export function preventAutoHide() {
+    console.warn('SplashScreen.preventAutoHide() is deprecated in favour of SplashScreen.preventAutoHideAsync()');
+    return preventAutoHideAsync();
 }
 //# sourceMappingURL=SplashScreen.js.map

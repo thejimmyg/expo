@@ -12,30 +12,6 @@
     android:layout_centerVertical="true"
     android:visibility="gone" />
 
-  <ImageView
-    android:id="@+id/background_image_view"
-    android:src="@drawable/shell_launch_background_image"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:layout_centerInParent="true"
-    android:adjustViewBounds="true"
-    android:scaleType="fitCenter"
-    android:visibility="gone"
-   />
-
-  <ImageView
-    android:id="@+id/image_view"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_centerHorizontal="true"
-    android:layout_centerVertical="true"
-    android:adjustViewBounds="true"
-    android:maxHeight="200dp"
-    android:maxWidth="200dp"
-    android:scaleType="fitCenter"
-    android:src="@drawable/big_logo_new_filled"
-    android:visibility="gone"/>
-
   <LinearLayout
     android:id="@+id/status_bar"
     android:visibility="gone"

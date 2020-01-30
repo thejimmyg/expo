@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
@@ -102,9 +101,6 @@ public class ExperienceActivity extends BaseExperienceActivity implements Expone
   private boolean mWillBeReloaded = false;
 
   private RemoteViews mNotificationRemoteViews;
-  private Handler mNotificationAnimationHandler;
-  private Runnable mNotificationAnimator;
-  private int mNotificationAnimationFrame;
   private NotificationCompat.Builder mNotificationBuilder;
   private boolean mIsLoadExperienceAllowedToRun = false;
   private boolean mShouldShowLoadingScreenWithOptimisticManifest = false;
@@ -115,32 +111,17 @@ public class ExperienceActivity extends BaseExperienceActivity implements Expone
   private DevBundleDownloadProgressListener mDevBundleDownloadProgressListener = new DevBundleDownloadProgressListener() {
     @Override
     public void onProgress(final @Nullable String status, final @Nullable Integer done, final @Nullable Integer total) {
-      UiThreadUtil.runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-          updateLoadingProgress(status, done, total);
-        }
-      });
+      updateLoadingProgress(status, done, total);
     }
 
     @Override
     public void onSuccess() {
-      UiThreadUtil.runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-          checkForReactViews();
-        }
-      });
+      finishLoading();
     }
 
     @Override
     public void onFailure(Exception error) {
-      UiThreadUtil.runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-          stopLoading();
-        }
-      });
+      interruptLoading(error);
     }
   };
 
@@ -323,7 +304,7 @@ public class ExperienceActivity extends BaseExperienceActivity implements Expone
       ExperienceActivityUtils.configureStatusBar(manifest, ExperienceActivity.this);
       ExperienceActivityUtils.setNavigationBar(manifest, ExperienceActivity.this);
 
-      showLoadingScreen(manifest);
+      startLoading(manifest);
 
       ExperienceActivityUtils.setTaskDescription(mExponentManifest, manifest, ExperienceActivity.this);
     });
@@ -441,7 +422,7 @@ public class ExperienceActivity extends BaseExperienceActivity implements Expone
 
       mReactRootView = new RNObject("host.exp.exponent.ReactUnthemedRootView");
       mReactRootView.loadVersion(mDetachSdkVersion).construct(ExperienceActivity.this);
-      setView((View) mReactRootView.get());
+      setReactNativeRootView((View) mReactRootView.get());
 
       String id;
       try {
@@ -462,7 +443,7 @@ public class ExperienceActivity extends BaseExperienceActivity implements Expone
 
       ExperienceActivityUtils.configureStatusBar(manifest, ExperienceActivity.this);
       ExperienceActivityUtils.setNavigationBar(manifest, ExperienceActivity.this);
-      showLoadingScreen(manifest);
+      startLoading(manifest);
 
       ExperienceActivityUtils.setTaskDescription(mExponentManifest, manifest, ExperienceActivity.this);
       handleExperienceOptions(kernelOptions);
